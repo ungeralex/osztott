@@ -9,15 +9,18 @@ public class Main {
 
     public static final String HOST = "localhost";
     public static final int LOWEST_PORT = 20000;
-    public static final int HIGHEST_PORT = 20100;
+    public static final int HIGHEST_PORT = 20010;
 
     public static int LOWEST_TIMEOUT;
     public static int HIGHEST_TIMEOUT;
+
+    public static int AGENT_SUM;
 
     public static void main(String[] args) {
         List<Agent> firstAgents = Util.createAgents(FIRST_AGENT_PATH);
         List<Agent> secondAgents = Util.createAgents(SECOND_AGENT_PATH);
 
+        AGENT_SUM = Integer.parseInt(args[1]);
         LOWEST_TIMEOUT = Integer.parseInt(args[2]);
         HIGHEST_TIMEOUT = Integer.parseInt(args[3]);
 

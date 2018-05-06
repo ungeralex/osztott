@@ -14,7 +14,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static hu.elte.Main.*;
+
 public class Util {
+
+    public static List<Agent> arrestedAgents = new ArrayList<>();
 
     private static final String FIRST_AGENT_REGEX = "^agent1-[0-9]+.*$";
 
@@ -36,20 +40,50 @@ public class Util {
         return ThreadLocalRandom.current().nextInt(low, high + 1);
     }
 
+    public static AgencyEnum getOppositeAgency(AgencyEnum agency) {
+        return agency == AgencyEnum.FIRST ? AgencyEnum.SECOND : AgencyEnum.FIRST;
+    }
+
     public static boolean listEqualsIgnoreOrder(List<String> list1, List<String> list2) {
         return new HashSet<>(list1).equals(new HashSet<>(list2));
     }
-    
+
     public static void shutDownExecutor(ExecutorService executorService) {
-            try {
-                executorService.shutdown();
-                executorService.awaitTermination(1, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                executorService.shutdownNow();
-                System.out.println("executor shutDown finishes");
-            }
+        try {
+            executorService.shutdown();
+            executorService.awaitTermination(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            executorService.shutdownNow();
+            System.out.println("executor shutDown finishes");
+        }
+    }
+
+    public static synchronized boolean isGameOver() {
+        if (arrestedAgents.size() >= AGENT_SUM) {
+            return checkIfAgencyIsLose(AgencyEnum.FIRST) || checkIfAgencyIsLose(AgencyEnum.SECOND);
+        } else {
+            return false;
+        }
+    }
+
+    public static synchronized void printOutWinner() {
+        if (checkIfAgencyIsLose(AgencyEnum.FIRST)) {
+            System.out.println("Second agency won the game!");
+        } else {
+            System.out.println("First agency won the game!");
+        }
+    }
+
+
+    public static void addArrestedAgent(Agent agent) {
+        arrestedAgents.add(agent);
+    }
+
+    private static  boolean checkIfAgencyIsLose(AgencyEnum agency) {
+        int counter = (int) arrestedAgents.stream().filter(a -> a.getAgencyEnum() == agency).count();
+        return counter >= AGENT_SUM;
     }
 
     private static Agent createAgentFromFile(Path path) {
@@ -65,7 +99,7 @@ public class Util {
             String secret = sc.nextLine();
             int id = Integer.parseInt(matcher.group(2));
             Agent agent;
-            agent = path.getFileName().toString().matches(FIRST_AGENT_REGEX) ?  new Agent(id, AgencyEnum.FIRST, Arrays.asList(names), secret) : new Agent(id, AgencyEnum.SECOND, Arrays.asList(names), secret);
+            agent = path.getFileName().toString().matches(FIRST_AGENT_REGEX) ? new Agent(id, AgencyEnum.FIRST, Arrays.asList(names), secret) : new Agent(id, AgencyEnum.SECOND, Arrays.asList(names), secret);
             return agent;
         } catch (FileNotFoundException e) {
             e.printStackTrace();

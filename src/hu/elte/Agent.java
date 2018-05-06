@@ -10,9 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static hu.elte.Main.*;
-import static hu.elte.Util.generateRandomInRange;
-import static hu.elte.Util.listEqualsIgnoreOrder;
-import static hu.elte.Util.shutDownExecutor;
+import static hu.elte.Util.*;
 
 
 public class Agent extends Thread {
@@ -85,7 +83,7 @@ public class Agent extends Thread {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
         Runnable server = () -> {
-            while (!this.isArrested) {
+            while (!this.isArrested && !isGameOver()) {
                 try (
                         Socket socket = this.server.accept();
                         Scanner in = new Scanner(socket.getInputStream());
@@ -132,78 +130,88 @@ public class Agent extends Thread {
                     }
 
 
+                } catch (IOException e) {
+                    //e.printStackTrace();
+                }
+            }
+
+            if (!this.isArrested) {
+                printOutWinner();
+            }
+        };
+
+        Runnable client = () -> {
+            while (!this.isArrested && !isGameOver()) {
+
+                try {
+                    TimeUnit.MILLISECONDS.sleep(generateRandomInRange(LOWEST_TIMEOUT, HIGHEST_TIMEOUT));
+                } catch (InterruptedException e) {
+                    //e.printStackTrace();
+                }
+
+                System.out.println(this + " try to connect server");
+                try (
+                        Socket socket = new Socket(HOST, getRandomPort());
+                        Scanner in = new Scanner(socket.getInputStream());
+                        PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
+                ) {
+                    System.out.println(this + " started at port: " + this.server.getLocalPort());
+
+                    String agentName = in.nextLine();
+                    System.out.println(this + " receiving agent random name: " + agentName);
+
+                    AgencyEnum guess = null;
+
+                    if (this.agencyWithNames.containsValue(agentName)) {
+                        System.out.println(this + " known agent's agency");
+                        write(out, getKeyByValue(agentName));
+                    } else {
+                        System.out.println(this + " doesnt know agent's agency");
+                        int randomInt = generateRandomInRange(0, 1);
+                        guess = randomInt == 0 ? AgencyEnum.FIRST : AgencyEnum.SECOND;
+                        System.out.println(this + " sending a guess to server: " + guess);
+                        write(out, guess.toString());
+                    }
+
+                    if (in.hasNextLine()) {
+                        if (in.nextLine().equals("OK")) {
+                            if (guess != null) {
+                                System.out.println("Add to known names map (Agency,Agent Name): " + guess + " " + agentName);
+                                this.agencyWithNames.put(guess, agentName);
+                            }
+                        }
+
+                        if (this.agencyEnum == guess) {
+                            write(out, "OK");
+                            String randomSecret = getRandomSecret();
+                            write(out, randomSecret);
+                            System.out.println("Tell a random secret to server: " + randomSecret);
+
+                            this.knownSecrets.add(in.nextLine());
+                        } else {
+                            write(out, "???");
+                            int id = generateRandomInRange(1, 5);
+                            System.out.println(this + " guess agent id: " + id);
+                            write(out, id);
+
+                            if (in.hasNextLine()) {
+                                this.knownSecrets.add(in.nextLine());
+                            }
+                        }
+                    } else if (guess != null) {
+                        AgencyEnum agency = getOppositeAgency(guess);
+                        System.out.println("Add to known names map (Agency,Agent Name): " + agency + " " + agentName);
+                        this.agencyWithNames.put(agency, agentName);
+                    }
+
 
                 } catch (IOException e) {
                     //e.printStackTrace();
                 }
             }
-        };
 
-        Runnable client = () -> {
-            while (!this.isArrested) {
-
-            try {
-                TimeUnit.MILLISECONDS.sleep(generateRandomInRange(LOWEST_TIMEOUT, HIGHEST_TIMEOUT));
-            } catch (InterruptedException e) {
-                //e.printStackTrace();
-            }
-
-            System.out.println(this + " try to connect server");
-            try (
-                    Socket socket = new Socket(HOST, getRandomPort());
-                    Scanner in = new Scanner(socket.getInputStream());
-                    PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
-            ) {
-                System.out.println(this + " started at port: " + this.server.getLocalPort());
-
-                String agentName = in.nextLine();
-                System.out.println(this + " receiving agent random name: " + agentName);
-
-                AgencyEnum guess = null;
-
-                if (this.agencyWithNames.containsValue(agentName)) {
-                    System.out.println(this + " known agent's agency");
-                    write(out, getKeyByValue(agentName));
-                } else {
-                    System.out.println(this + " doesnt know agent's agency");
-                    int randomInt = generateRandomInRange(0,1);
-                    guess = randomInt == 0 ? AgencyEnum.FIRST : AgencyEnum.SECOND;
-                    System.out.println(this + " sending a guess to server: " + guess);
-                    write(out, guess.toString());
-                }
-
-                if (in.hasNextLine()) {
-                    if (in.nextLine().equals("OK")) {
-                        if (guess != null) {
-                            System.out.println("Add to known names map (Agency,Agent Name): " + guess + " " + agentName);
-                            this.agencyWithNames.put(guess, agentName);
-                        }
-                    }
-
-                    if (this.agencyEnum == guess) {
-                        write(out, "OK");
-                        String randomSecret = getRandomSecret();
-                        write(out, randomSecret);
-                        System.out.println("Tell a random secret to server: " + randomSecret);
-
-                        this.knownSecrets.add(in.nextLine());
-                    } else {
-                        write(out, "???");
-                        int id = generateRandomInRange(1,5);
-                        System.out.println(this + " guess agent id: " + id);
-                        write(out, id);
-
-                        if (in.hasNextLine()) {
-                            this.knownSecrets.add(in.nextLine());
-                        }
-                    }
-                }
-
-
-
-            } catch (IOException e) {
-                //e.printStackTrace();
-            }
+            if (!this.isArrested) {
+                printOutWinner();
             }
 
         };
