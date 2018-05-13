@@ -1,6 +1,7 @@
 package hu.elte;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
@@ -24,17 +25,32 @@ public class Main {
         LOWEST_TIMEOUT = Integer.parseInt(args[2]);
         HIGHEST_TIMEOUT = Integer.parseInt(args[3]);
 
-//        new Thread(firstAgents.get(0)).start();
-//        new Thread(secondAgents.get(0)).start();
+        firstAgents.forEach(Thread::start);
+
+        secondAgents.forEach(Thread::start);
 
         firstAgents.forEach(a -> {
-            Thread thread = new Thread(a);
-            thread.start();
+            try {
+                a.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
         });
 
         secondAgents.forEach(a -> {
-            Thread thread = new Thread(a);
-            thread.start();
+            try {
+                a.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         });
+
+        try {
+            TimeUnit.SECONDS.sleep(5);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        Util.printOutWinner();
     }
 }

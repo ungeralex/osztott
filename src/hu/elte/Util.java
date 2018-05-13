@@ -19,6 +19,8 @@ import static hu.elte.Main.*;
 public class Util {
 
     public static List<Agent> arrestedAgents = new ArrayList<>();
+    public static Set<String> firstAgentsSecrets = new HashSet<>();
+    public static Set<String> secondAgentsSecrets = new HashSet<>();
 
     private static final String FIRST_AGENT_REGEX = "^agent1-[0-9]+.*$";
 
@@ -36,6 +38,14 @@ public class Util {
         return agents;
     }
 
+    public static void addSecretToList(AgencyEnum agency, String secret) {
+        if (agency == AgencyEnum.FIRST) {
+            firstAgentsSecrets.add(secret);
+        } else {
+            secondAgentsSecrets.add(secret);
+        }
+    }
+
     public static int generateRandomInRange(int low, int high) {
         return ThreadLocalRandom.current().nextInt(low, high + 1);
     }
@@ -48,41 +58,44 @@ public class Util {
         return new HashSet<>(list1).equals(new HashSet<>(list2));
     }
 
-    public static void shutDownExecutor(ExecutorService executorService) {
-        try {
-            executorService.shutdown();
-            executorService.awaitTermination(1, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            executorService.shutdownNow();
-            System.out.println("executor shutDown finishes");
-        }
-    }
+//    public static void shutDownExecutor(ExecutorService executorService) {
+//        try {
+//            executorService.shutdown();
+//            executorService.awaitTermination(1, TimeUnit.SECONDS);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        } finally {
+//            executorService.shutdownNow();
+//            System.out.println("executor shutDown finishes");
+//        }
+//    }
 
     public static synchronized boolean isGameOver() {
-        if (arrestedAgents.size() >= AGENT_SUM) {
-            return checkIfAgencyIsLose(AgencyEnum.FIRST) || checkIfAgencyIsLose(AgencyEnum.SECOND);
-        } else {
-            return false;
-        }
+        boolean allAgentIsArrestedFromAgency = checkIfAgencyIsLose(AgencyEnum.FIRST) || checkIfAgencyIsLose(AgencyEnum.SECOND);
+        boolean agencyHasAllSecret = firstAgentsSecrets.size() == AGENT_SUM || secondAgentsSecrets.size() == AGENT_SUM;
+        return allAgentIsArrestedFromAgency || agencyHasAllSecret;
     }
 
     public static synchronized void printOutWinner() {
         if (checkIfAgencyIsLose(AgencyEnum.FIRST)) {
             System.out.println("Second agency won the game!");
-        } else {
+        } else if (checkIfAgencyIsLose(AgencyEnum.SECOND)) {
             System.out.println("First agency won the game!");
+        } else if (firstAgentsSecrets.size() == AGENT_SUM) {
+            System.out.println("First agency won the game!");
+        } else {
+            System.out.println("Second agency won the game!");
         }
     }
 
 
-    public static void addArrestedAgent(Agent agent) {
+    public static synchronized void addArrestedAgent(Agent agent) {
         arrestedAgents.add(agent);
     }
 
-    private static  boolean checkIfAgencyIsLose(AgencyEnum agency) {
+    private static synchronized boolean checkIfAgencyIsLose(AgencyEnum agency) {
         int counter = (int) arrestedAgents.stream().filter(a -> a.getAgencyEnum() == agency).count();
+
         return counter >= AGENT_SUM;
     }
 
