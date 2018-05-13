@@ -184,7 +184,7 @@ public class Agent extends Thread {
 
                                 String secret = in.nextLine();
                                 this.knownSecrets.add(secret);
-                                Util.addSecretToList(guess, secret);
+                                addSecretToList(this.agencyEnum, secret);
                             } else {
                                 write(out, "???");
                                 int id = generateRandomInRange(1, 5);
@@ -192,7 +192,9 @@ public class Agent extends Thread {
                                 write(out, id);
 
                                 if (in.hasNextLine()) {
-                                    this.knownSecrets.add(in.nextLine());
+                                    String secret = in.nextLine();
+                                    this.knownSecrets.add(secret);
+                                    addSecretToList(this.agencyEnum, secret);
                                 }
                             }
                         } else if (guess != null) {

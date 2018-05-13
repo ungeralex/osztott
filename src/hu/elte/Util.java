@@ -7,9 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -40,9 +38,9 @@ public class Util {
 
     public static void addSecretToList(AgencyEnum agency, String secret) {
         if (agency == AgencyEnum.FIRST) {
-            firstAgentsSecrets.add(secret);
+            secondAgentsSecrets.remove(secret);
         } else {
-            secondAgentsSecrets.add(secret);
+            firstAgentsSecrets.remove(secret);
         }
     }
 
@@ -72,7 +70,7 @@ public class Util {
 
     public static synchronized boolean isGameOver() {
         boolean allAgentIsArrestedFromAgency = checkIfAgencyIsLose(AgencyEnum.FIRST) || checkIfAgencyIsLose(AgencyEnum.SECOND);
-        boolean agencyHasAllSecret = firstAgentsSecrets.size() == AGENT_SUM || secondAgentsSecrets.size() == AGENT_SUM;
+        boolean agencyHasAllSecret = firstAgentsSecrets.size() == 0 || secondAgentsSecrets.size() == 0;
         return allAgentIsArrestedFromAgency || agencyHasAllSecret;
     }
 
@@ -81,10 +79,10 @@ public class Util {
             System.out.println("Second agency won the game!");
         } else if (checkIfAgencyIsLose(AgencyEnum.SECOND)) {
             System.out.println("First agency won the game!");
-        } else if (firstAgentsSecrets.size() == AGENT_SUM) {
-            System.out.println("First agency won the game!");
-        } else {
+        } else if (firstAgentsSecrets.size() == 0) {
             System.out.println("Second agency won the game!");
+        } else {
+            System.out.println("First agency won the game!");
         }
     }
 
@@ -113,6 +111,11 @@ public class Util {
             int id = Integer.parseInt(matcher.group(2));
             Agent agent;
             agent = path.getFileName().toString().matches(FIRST_AGENT_REGEX) ? new Agent(id, AgencyEnum.FIRST, Arrays.asList(names), secret) : new Agent(id, AgencyEnum.SECOND, Arrays.asList(names), secret);
+            if (agent.getAgencyEnum() == AgencyEnum.FIRST) {
+                firstAgentsSecrets.add(secret);
+            } else {
+                secondAgentsSecrets.add(secret);
+            }
             return agent;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
