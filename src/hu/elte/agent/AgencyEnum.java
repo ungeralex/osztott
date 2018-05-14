@@ -1,4 +1,4 @@
-package hu.elte;
+package hu.elte.agent;
 
 public enum AgencyEnum {
     FIRST("FIRST"),
